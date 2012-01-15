@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="author" content="Mark O'Connor">
+    <meta name="description" content="codechart trace">
+</head>
+<body>
+    <div id="header">
+    </div>
+    <div id="content">
+        <div id="trace-column">
+            <table class="traces">
+                <!--(for trace in traces)-->
+                <tr>
+                    <td>
+                        <div class="name">@!trace['name']!@</div>
+                        <div class="pid">@!trace['pid']!@</div>
+                    </td>
+                    <td>
+                        <table class="trace">
+                        <tr><td>cpu</td><td><div id="cpu_@!trace['i']!@"></div></td></tr>
+                        <tr><td>mem</td><td><div id="mem_@!trace['i']!@"></div></td></tr>
+                        <tr><td>io</td><td><div id="io_@!trace['i']!@"></div></td></tr>
+                        <tr><td>code</td><td><div id="code_@!trace['i']!@"></div></td></tr>
+                        </table>
+                    </td>
+                </tr>
+                <!--(end)-->
+            </div>
+        </div>
+        <div id="stack-column">
+        </div>
+        <div id="footer">
+        </div>
+    </div>
+    <style>
+        body { background: url('http://subtlepatterns.com/patterns/exclusive_paper.png') }
+    </style>
+    <script src="jquip-min.js"></script>
+    <script src="raphael-min.js"></script>
+    <script src="g.raphael.js"></script>
+    <script src="g.line.js"></script>
+    <script>
+        var traces = %s
+        var max_i = %s
+        var trace_width = 400
+        var sparkline_height = 30
+        var px_per_sample = (trace_width / max_i)
+        var cpu = function(snapshot) { return snapshot[0]; }
+        var mem = function(snapshot) { return snapshot[1]; }
+        var io = function(snapshot) { return snapshot[2][0] + snapshot[2][1]; }
+        var code = function(snapshot) { return snapshot[3]; }
+        var colours = function(snapshot) { return snapshot[4]; }
+        var handle_click = function(e)
+        {
+            var x = e.pageX - e.target.offset().left
+            var index = x / px_per_sample
+            var trace = traces[0]
+            var snapshot = trace.data[index][1]
+            var stack = code(snapshot).join('<br />')
+            document.getElementById('stack-column').innerHTML = stack
+        }
+
+        var add_handler = function(element)
+        {
+            $(element).click = handle_click;
+        }
+
+        var sparkline = function(trace, prefix, get_data, color)
+        {
+            var x = Array()
+            var y = Array()
+            for (var i=0;i<trace.data.length; ++i)
+            {
+                x.push(trace.data[i][0])
+                var snapshot = trace.data[i][1]
+                y.push(get_data(snapshot))
+            }
+            if (x.length > 1)
+            {
+                var left = px_per_sample * x[0]
+                var right = px_per_sample * x[x.length-1]
+                var paper = Raphael(prefix + "_" + trace.i, trace_width, sparkline_height)
+                paper.linechart(left, 0, right - left, sparkline_height, x, [y], { shade: true, gutter: 1, colors: [color] })
+
+                add_handler(prefix + "_" + trace.i)
+            }
+        }
+
+        var rainbow = function(trace)
+        {
+            var max_stack = 0
+            for (var i=0;i<trace.data.length; ++i)
+                max_stack = Math.max(max_stack, code(trace.data[i][1]).length)
+
+            var height = 3
+            max_stack = Math.min((sparkline_height * 10)/height, max_stack)
+            var paper = Raphael("code_" + trace.i, trace_width, max_stack * height)
+            for (var i=0;i<trace.data.length; ++i)
+            {
+                var x = trace.data[i][0]
+                var snapshot = trace.data[i][1]
+                var stack = colours(snapshot)
+                var left = px_per_sample * x - px_per_sample / 2
+                var width = px_per_sample - 1
+                for (var y=0;y<max_stack && y<stack.length;++y)
+                {
+                    paper.rect(left, y * height, width + 1, height + 1).attr({fill: stack[y], 'stroke-width': 0, 'opacity': 0.5})
+                }
+            }
+
+            add_handler("code_" + trace.i)
+        }
+
+        for (var t=0; t<traces.length; ++t)
+        {
+            var trace = traces[t]
+            sparkline(trace, 'cpu', cpu, '#69bf2f')
+            sparkline(trace, 'mem', mem, '#2f69bf')
+            sparkline(trace, 'io', io, '#bf692f')
+            //sparkline(trace, 'cpu', cpu, '@!palette[6]!@')
+            //sparkline(trace, 'mem', mem, '@!palette[3]!@')
+            //sparkline(trace, 'io', io, '@!palette[0]!@')
+            rainbow(trace)
+        }
+    </script>
+</body>
+</html>
