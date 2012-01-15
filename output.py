@@ -1,3 +1,5 @@
+# Copyright 2011, 2012 Mark O'Connor. This program is distributed under the terms of the GNU General Public License v3.
+
 from pyratemp import Template
 from json import dumps, loads
 import re

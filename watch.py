@@ -1,3 +1,5 @@
+# Copyright 2011, 2012 Mark O'Connor. This program is distributed under the terms of the GNU General Public License v3.
+
 from psutil import process_iter
 from psutil.error import NoSuchProcess, AccessDenied
 from tracer import Tracer
