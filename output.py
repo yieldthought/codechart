@@ -95,6 +95,7 @@ def rainbow(base_name, function_name):
     return convert_hsv(h, s, v)
 
 if __name__ == '__main__':
-    json = open('ddt.bin.json').read()
+    from sys import argv
+    json = open(argv[1]).read()
     output = loads(json)
-    open('ddt.bin.html', 'w').write(format_output(output)[1])
+    open('%s.html' % argv[1].split('.json')[0], 'w').write(format_output(output)[1])

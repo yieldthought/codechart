@@ -28,7 +28,7 @@
                     </td>
                 </tr>
                 <!--(end)-->
-            </div>
+            </table>
         </div>
         <div id="stack-column">
         </div>
@@ -53,10 +53,25 @@
         var io = function(snapshot) { return snapshot[2][0] + snapshot[2][1]; }
         var code = function(snapshot) { return snapshot[3]; }
         var colours = function(snapshot) { return snapshot[4]; }
+        var find_pos = function (obj)
+        {
+            var curleft = 0,
+                curtop = 0;
+
+            if (obj.offsetParent) {
+                do {
+                    curleft += obj.offsetLeft;
+                    curtop += obj.offsetTop;
+                } while (obj = obj.offsetParent);
+
+                return { x: curleft, y: curtop };
+            }
+        }
+        
         var handle_click = function(e)
         {
-            var x = e.pageX - e.target.offset().left
-            var index = x / px_per_sample
+            var x = e.pageX - find_pos(e.target).x
+            var index = Math.floor(x / px_per_sample + 0.5)
             var trace = traces[0]
             var snapshot = trace.data[index][1]
             var stack = code(snapshot).join('<br />')
@@ -65,7 +80,8 @@
 
         var add_handler = function(element)
         {
-            $(element).click = handle_click;
+            document.getElementById(element).onclick = handle_click;
+            document.getElementById(element).onmousemove = handle_click;
         }
 
         var sparkline = function(trace, prefix, get_data, color)
